@@ -84,8 +84,18 @@ function activate(context) {
 			'USP-S', 
 			'XM1014'
 		];
+
+		const wear_options = [
+			'Field-Tested',
+			'Minimal Wear',
+			'Battle-Scarred',
+			'Well-Worn',
+			'Factory New',
+			'Not Painted'
+		];
 		
-		let quickPick = await vscode.window.showQuickPick(weapon_options).then(response => {
+		// Steam api vscode extension making in process
+		let quickPickWeapon = await vscode.window.showQuickPick(weapon_options).then(response => {
 			console.log(response);
 			return response;
 		});
@@ -94,13 +104,37 @@ function activate(context) {
 			placeHolder: "Name"
 		})
 
-		let wear = await vscode.window.showInputBox({
-			placeHolder: "Wear"
-		})
+		let quickPickWear = await vscode.window.showQuickPick(wear_options).then(response => {
+			console.log(response);
+			return response;
+		});
 
-		vscode.window.showInformationMessage(`quickPick --> ${quickPick}`);
-		vscode.window.showInformationMessage(`name --> ${name}`);
-		vscode.window.showInformationMessage(`wear --> ${wear}`);
+		// vscode.window.showInformationMessage(`quickPickWeapon --> ${quickPickWeapon}`);
+		// vscode.window.showInformationMessage(`name --> ${name}`);
+		// vscode.window.showInformationMessage(`quickPickWear --> ${quickPickWear}`);
+		// Five-SeveN%20%7C%20Case%20Hardened%20%28Field-Tested%29
+
+		if ((typeof(quickPickWeapon) !== 'undefined') && (typeof(name) !== 'undefined') && (typeof(quickPickWear) !== 'undefined')) {
+			// All correct, call the steam market api
+			console.log(typeof(quickPickWeapon));
+
+			let market_hash_name = quickPickWeapon + "%20%7C%20" + name + "%20%28" + quickPickWear + "%29";
+			console.log('market_hash_name --> ', market_hash_name);
+			axios.get('https://steamcommunity.com/market/priceoverview/?appid=730&currency=24&market_hash_name='+market_hash_name)
+			.then(response => {
+				console.log('response --> ', response);
+				if (response.status == 200) {
+					let data = response.data;
+					vscode.window.showInformationMessage(`The average price for your gun is: ${data.median_price}`);
+				}
+			})
+			.catch(err => {
+				console.error("failed, the error --> ", err);
+			})
+		} else {
+			// Not all values are available then show an error msg
+			vscode.window.showInformationMessage(`All the values are required.`);
+		}
 		
 
 	});
